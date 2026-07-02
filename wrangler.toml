@@ -2,16 +2,16 @@ name = "portfolio-middleware"
 main = "src/index.js"
 compatibility_date = "2026-01-01"
 
-[triggers]
-crons = ["*/5 * * * *", "0 */6 * * *"]
-
-# Bind your KV namespace here — must stay OUTSIDE any [section] table,
-# so it has to come before [vars] below.
+# Bind your KV namespace here — must stay above the FIRST [section]
+# header in this file (currently [triggers]), or it gets silently
+# absorbed into whichever section precedes it.
 kv_namespaces = [
   { binding = "PORTFOLIO_KV", id = "6e2338d9ddc040b4b192167722b14db4" }
 ]
 
-# Plain (non-secret) configuration.
+[triggers]
+crons = ["*/5 * * * *", "0 */6 * * *"]
+
 [vars]
 BACKEND_URL = "https://portfolio-api-1yjf.onrender.com/api"
 ALLOWED_ORIGIN = "https://bharani2310.github.io"
