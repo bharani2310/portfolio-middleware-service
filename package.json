@@ -1,0 +1,16 @@
+{
+  "name": "portfolio-middleware",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cloudflare Worker that caches the portfolio's /api/all data in KV so GitHub Pages never has to wait on the Render backend for reads.",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail",
+    "kv:create": "wrangler kv namespace create PORTFOLIO_KV",
+    "secret:refresh": "wrangler secret put REFRESH_SECRET"
+  },
+  "devDependencies": {
+    "wrangler": "^4.106.0"
+  }
+}

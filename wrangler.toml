@@ -1,0 +1,30 @@
+name = "portfolio-middleware"
+main = "src/index.js"
+compatibility_date = "2026-01-01"
+
+# Two schedules, handled by the same `scheduled()` export (branches on
+# event.cron — see src/index.js):
+#   */5 * * * *  -> refresh the /api/all KV cache
+#   0 */6 * * *  -> flush buffered contact messages to the backend
+[triggers]
+crons = ["*/5 * * * *", "0 */6 * * *"]
+
+# Plain (non-secret) configuration.
+[vars]
+# Your Render backend's API base URL — no trailing slash, includes "/api".
+BACKEND_URL = "https://portfolio-api-1yjf.onrender.com/api"
+
+# Origin(s) allowed to call this worker from the browser.
+# Comma-separated list, or "*" for any origin.
+ALLOWED_ORIGIN = "https://bharani2310.github.io"
+
+# Bind your KV namespace here. Create it first with:
+#   npx wrangler kv namespace create PORTFOLIO_KV
+# then paste the returned "id" below.
+kv_namespaces = [
+  { binding = "PORTFOLIO_KV", id = "6e2338d9ddc040b4b192167722b14db4" }
+]
+
+# REFRESH_SECRET is a SECRET, not a var — set it with:
+#   npx wrangler secret put REFRESH_SECRET
+# Do not put it in this file.
