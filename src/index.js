@@ -40,6 +40,8 @@
  * (see README.md).
  */
 
+import { API_DOCS_MARKDOWN } from './docs.js';
+
 const DATA_KEY = 'portfolio:all';
 const PENDING_CONTACTS_KEY = 'portfolio:pending-contacts';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -70,6 +72,115 @@ function json(body, status, extraHeaders) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...JSON_HEADERS, ...extraHeaders },
+  });
+}
+
+/** Renders the embedded API docs as a themed HTML page (Markdown parsed client-side). */
+function docsPage(markdown) {
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>portfolio-middleware — API Docs</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<style>
+  :root {
+    --bg: #0B0E14;
+    --surface: #11151C;
+    --ink: #E6E8EB;
+    --line: #1E232C;
+    --violet: #7C5CFC;
+    --mint: #45E0C4;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif;
+    line-height: 1.65;
+  }
+  #doc {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 48px 24px 96px;
+  }
+  h1, h2, h3 { font-weight: 700; letter-spacing: -0.01em; }
+  h1 {
+    font-size: 2rem;
+    background: linear-gradient(90deg, var(--violet), var(--mint));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin-bottom: 0.3em;
+  }
+  h2 {
+    font-size: 1.35rem;
+    margin-top: 2.5em;
+    padding-bottom: 0.4em;
+    border-bottom: 1px solid var(--line);
+  }
+  h3 { font-size: 1.05rem; margin-top: 1.8em; color: var(--mint); }
+  p, li { color: #C7CAD1; }
+  a { color: var(--mint); }
+  code {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 0.15em 0.4em;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 0.88em;
+    color: #F2A93B;
+  }
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px 18px;
+    overflow-x: auto;
+  }
+  pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--ink);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1em 0;
+    font-size: 0.92rem;
+  }
+  th, td {
+    border: 1px solid var(--line);
+    padding: 8px 12px;
+    text-align: left;
+  }
+  th { background: var(--surface); color: var(--mint); }
+  hr { border: none; border-top: 1px solid var(--line); margin: 2.5em 0; }
+  blockquote {
+    border-left: 3px solid var(--violet);
+    margin: 1em 0;
+    padding: 0.2em 1em;
+    color: #9AA0AC;
+  }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: #7C5CFC55; border-radius: 8px; }
+</style>
+</head>
+<body>
+  <div id="doc">Loading documentation…</div>
+  <script>
+    const markdownSource = ${JSON.stringify(markdown)};
+    document.getElementById('doc').innerHTML = marked.parse(markdownSource);
+  </script>
+</body>
+</html>`;
+
+  return new Response(html, {
+    status: 200,
+    headers: { 'Content-Type': 'text/html; charset=UTF-8' },
   });
 }
 
@@ -175,6 +286,11 @@ export default {
       return new Response(null, { status: 204, headers: cors });
     }
 
+    // --- Docs: renders the embedded Markdown API reference as HTML ---
+    if (url.pathname === '/api/docs' && request.method === 'GET') {
+      return docsPage(API_DOCS_MARKDOWN);
+    }
+
     // --- API #1: pull fresh data from the backend into KV ---
     if (url.pathname === '/api/refresh') {
       if (!isAuthorizedRefresh(request, env, url)) {
@@ -269,7 +385,7 @@ export default {
     // in the admin inbox, etc. — is handled by the frontend calling the
     // Render backend directly. This worker doesn't proxy those at all.
     return json(
-      { message: 'Not found. This worker only serves /api/all, /api/contact and /api/refresh.' },
+      { message: 'Not found. This worker serves /api/all, /api/contact, /api/refresh and /api/docs.' },
       404,
       cors
     );
