@@ -59,7 +59,7 @@ const openapi = fromHono(app, {
 openapi.get('/api/all', FetchAll);
 openapi.post('/api/contact', SubmitContact);
 openapi.post('/api/refresh', RefreshCache);
-openapi.post('/api/test-flush', FlushContacts);
+openapi.post('/api/message-refresh', FlushContacts);
 
 app.notFound((c) =>
   c.json(
