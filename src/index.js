@@ -175,6 +175,19 @@ export default {
       return new Response(null, { status: 204, headers: cors });
     }
 
+    // --- API #1: pull fresh data from the backend into KV ---
+    if (url.pathname === '/api/refresh') {
+      if (!isAuthorizedRefresh(request, env, url)) {
+        return json({ message: 'Unauthorized.' }, 401, cors);
+      }
+      try {
+        const result = await refreshCache(env);
+        return json({ success: true, updatedAt: result.updatedAt }, 200, cors);
+      } catch (err) {
+        return json({ success: false, message: err.message }, 502, cors);
+      }
+    }
+
     // --- API #2: serve cached data to the public frontend ---
     if (url.pathname === '/api/all' && request.method === 'GET') {
       try {
@@ -244,17 +257,12 @@ export default {
       }
     }
 
-    // --- API #1: pull fresh data from the backend into KV ---
-    if (url.pathname === '/api/refresh') {
-      if (!isAuthorizedRefresh(request, env, url)) {
-        return json({ message: 'Unauthorized.' }, 401, cors);
-      }
-      try {
-        const result = await refreshCache(env);
-        return json({ success: true, updatedAt: result.updatedAt }, 200, cors);
-      } catch (err) {
-        return json({ success: false, message: err.message }, 502, cors);
-      }
+
+
+    // --- API #4: Sends the pending contacts from middleware to backend ---
+    if (url.pathname === "/api/test-flush") {
+      const result = await flushPendingContacts(env);
+      return json(result, 200, cors);
     }
 
     // Everything else — admin login, admin CRUD, reading/deleting messages
