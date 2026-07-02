@@ -22,7 +22,7 @@ ALLOWED_ORIGIN = "https://bharani2310.github.io"
 #   npx wrangler kv namespace create PORTFOLIO_KV
 # then paste the returned "id" below.
 kv_namespaces = [
-  { binding = "PORTFOLIO_KV", id = "6e2338d9ddc040b4b192167722b14db4" }
+  { binding = "portfolio-middleware-PORTFOLIO_KV", id = "6e2338d9ddc040b4b192167722b14db4" }
 ]
 
 # REFRESH_SECRET is a SECRET, not a var — set it with:
