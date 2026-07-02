@@ -7,23 +7,33 @@ the free tier).
 
 ## How requests are routed
 
-This worker is deliberately narrow — it only ever handles **two routes**:
+This worker is deliberately narrow — it only ever handles a handful of routes:
 
 | Route | Method | What it does |
 |---|---|---|
 | `/api/all` | `GET` | Serves the cached portfolio data from KV. Called by the public frontend. If the cache is empty (e.g. right after first deploy), it fetches live from the backend once, stores it, and serves it. |
-| `/api/refresh` | `POST` (or `GET`) | Fetches fresh data from the Render backend's own `/api/all` and overwrites the KV cache. Protected by a secret. Also runs automatically every 5 minutes via a Cron Trigger. |
+| `/api/contact` | `POST` | Buffers a contact-form submission in KV. Flushed to the backend every 6 hours (or manually via `/api/test-flush`). |
+| `/api/refresh` | `POST` | Fetches fresh data from the Render backend's own `/api/all` and overwrites the KV cache. Protected by a secret. Runs automatically every 5 minutes via a Cron Trigger, and is also called by the backend itself right after any admin save. |
+| `/api/test-flush` | `POST` | Manually runs the contact-flush job without waiting for its 6-hour schedule. Useful for testing. |
+| `/api/docs` | `GET` | Interactive Swagger-style API documentation, auto-generated from each route's schema (powered by [chanfana](https://github.com/cloudflare/chanfana)). |
 
-**Everything else bypasses this worker entirely** and goes straight from the
-browser to your Render backend:
-- Admin login (`/api/auth/login`) and all other auth routes
-- All admin create/update/delete requests (profile, experience, skills,
-  projects, messages)
-- The public contact form submission (`POST /api/contact`)
+**Admin login, admin CRUD, and the admin message inbox bypass this worker
+entirely** and go straight from the browser to your Render backend. That
+split is done on the **frontend**, not in this worker — see "Frontend
+wiring" below. This worker never even sees those requests, so there's
+nothing to misroute.
 
-That split is done on the **frontend**, not in this worker — see
-"Frontend wiring" below. This worker never even sees those requests, so
-there's nothing to misroute.
+## API Documentation
+
+Full interactive docs (request/response schemas, try-it-out) are served
+live at:
+
+```
+https://portfolio-middleware.<your-subdomain>.workers.dev/api/docs
+```
+
+A plain-Markdown version of the same reference also lives in this repo at
+[`API_DOCUMENTATION.md`](./API_DOCUMENTATION.md).
 
 ## One-time setup
 
@@ -82,22 +92,11 @@ just calls your existing `GET /api/all` endpoint.
 
 ## Keeping the cache fresh after an admin edit
 
-Right now the cache refreshes automatically every 5 minutes via the Cron
-Trigger, and self-heals on a cold miss. That means after an admin saves a
-change, it can take **up to 5 minutes** to show up on the public site.
-
-If you want changes to appear instantly instead, you can optionally call
-the refresh endpoint right after a successful admin save, e.g. from the
-frontend admin pages:
-
-```js
-fetch('https://portfolio-middleware.<your-subdomain>.workers.dev/api/refresh?secret=YOUR_REFRESH_SECRET', { method: 'POST' });
-```
-
-This wasn't wired in automatically since it means embedding the refresh
-secret somewhere the admin's browser can read it — happy to help set this
-up securely (e.g. having the backend call it server-side instead, so the
-secret never reaches the browser) if you want it.
+The cache refreshes automatically every 5 minutes via the Cron Trigger,
+and self-heals on a cold miss. On top of that, the Render backend already
+pings `POST /api/refresh` itself right after any admin create/update/delete
+(see `backend/src/services/notifyMiddleware.js`), so changes typically show
+up on the public site within a second or two — not the full 5 minutes.
 
 ## Local development
 

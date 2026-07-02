@@ -2,6 +2,13 @@
 
 Base URL (production): `https://portfolio-middleware.<your-subdomain>.workers.dev`
 
+> This documentation is also served live as an **interactive Swagger-style
+> UI** at **`GET /api/docs`** on the Worker itself — e.g.
+> `https://portfolio-middleware.<your-subdomain>.workers.dev/api/docs`.
+> It's auto-generated from each route's schema via
+> [chanfana](https://github.com/cloudflare/chanfana), so it stays in sync
+> with the code and lets you try each request directly from the browser.
+
 This Worker sits in front of the Render backend and exposes exactly three
 public routes plus one protected route. It is **not** a general-purpose
 proxy — every other request (admin login, admin CRUD, admin inbox) goes
