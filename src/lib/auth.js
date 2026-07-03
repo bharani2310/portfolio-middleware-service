@@ -49,8 +49,15 @@ export function isAuthorized(c) {
  * /api/refresh, which already has its own dedicated x-refresh-secret
  * protection (used by the backend's automated post-write pings and by
  * the Cron Trigger) and shouldn't require a second, different token on
- * top of that. */
-export const PUBLIC_PATHS = ['/api/docs', '/api/openapi.json', '/api/refresh'];
+ * top of that.
+ *
+ * Note: chanfana serves the raw OpenAPI spec JSON at /openapi.json
+ * (root-level), NOT /api/openapi.json — Swagger UI's own JS fetches that
+ * path directly to render the docs page, so it must stay open too or the
+ * docs page loads but shows nothing (exactly the 401 you'd see in the
+ * browser console otherwise).
+ */
+export const PUBLIC_PATHS = ['/api/docs', '/openapi.json', '/api/refresh'];
 
 export function isPublicPath(path) {
   return PUBLIC_PATHS.some((p) => path === p || path.startsWith(`${p}/`));
@@ -82,3 +89,35 @@ export const securitySchema = {
   },
   security: [{ bearerAuth: [] }],
 };
+
+/**
+ * Belt-and-suspenders fix: some chanfana/hono version combos don't merge
+ * the `schema.components.securitySchemes` / `schema.security` passed to
+ * `fromHono()` into the generated spec, which means the "Authorize"
+ * button never appears in Swagger UI even though every route really is
+ * bearer-protected. Rather than depend on that merge working, this
+ * middleware patches the actual /openapi.json response after chanfana
+ * generates it, guaranteeing the security scheme is present.
+ */
+export async function ensureSecuritySchemeMiddleware(c, next) {
+  await next();
+  if (c.req.path !== '/openapi.json' || !c.res) return;
+
+  try {
+    const body = await c.res.clone().json();
+    body.components = body.components || {};
+    body.components.securitySchemes = {
+      ...(body.components.securitySchemes || {}),
+      ...securitySchema.components.securitySchemes,
+    };
+    if (!body.security || body.security.length === 0) {
+      body.security = securitySchema.security;
+    }
+    const headers = new Headers(c.res.headers);
+    headers.set('Content-Type', 'application/json');
+    c.res = new Response(JSON.stringify(body), { status: c.res.status, headers });
+  } catch {
+    // Spec wasn't JSON for some reason — leave the response untouched
+    // rather than break the docs page entirely.
+  }
+}

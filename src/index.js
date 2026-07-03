@@ -68,7 +68,7 @@ import {
   MarkConversationRead,
 } from './endpoints/ContactAdmin.js';
 import { refreshCache, flushPendingContacts } from './lib/kv.js';
-import { isAuthorized, isPublicPath, securitySchema } from './lib/auth.js';
+import { isAuthorized, isPublicPath, securitySchema, ensureSecuritySchemeMiddleware } from './lib/auth.js';
 import { rateLimitMiddleware } from './lib/rateLimit.js';
 
 const app = new Hono();
@@ -89,6 +89,11 @@ app.use(
     maxAge: 86400,
   })
 );
+
+// Guarantees the OpenAPI spec's security scheme is present at
+// /openapi.json, patched in after generation — see lib/auth.js for why
+// this exists instead of relying on fromHono's schema-merge alone.
+app.use('*', ensureSecuritySchemeMiddleware);
 
 // Per-IP rate limit — runs before auth, so repeated hammering is
 // throttled regardless of whether the caller has a valid token.
