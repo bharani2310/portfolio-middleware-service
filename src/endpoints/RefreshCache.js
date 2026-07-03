@@ -9,7 +9,11 @@ export class RefreshCache extends OpenAPIRoute {
     description:
       "Protected route. Pulls fresh data from the Render backend's own /all endpoint and overwrites the KV " +
       'cache. Called automatically every 5 minutes by a Cron Trigger, and by the backend itself right after ' +
-      'any admin create/update/delete so the public cache never has to wait for the next tick.',
+      'any admin create/update/delete so the public cache never has to wait for the next tick. ' +
+      'Unlike every other route in this API, this one is intentionally exempt from the global bearer-token ' +
+      'requirement — it uses its own x-refresh-secret instead, since it\'s only ever called by the backend ' +
+      'and by Cloudflare Cron, never by a browser.',
+    security: [{ refreshSecret: [] }],
     parameters: [
       {
         name: 'x-refresh-secret',

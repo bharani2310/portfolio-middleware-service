@@ -11,7 +11,8 @@ export class SubmitContact extends OpenAPIRoute {
     description:
       'Buffers the message in KV instead of forwarding it to the backend immediately, so the visitor\'s ' +
       'request returns instantly without waiting on Render. Buffered messages are batch-flushed to the ' +
-      'backend every 6 hours (see POST /api/test-flush to trigger a flush manually).',
+      'backend every 6 hours (see POST /api/message-refresh to trigger a flush manually). Requires the ' +
+      'shared bearer token like every other route here — the frontend sends it automatically.',
     request: {
       body: {
         content: {

@@ -9,7 +9,8 @@ export class FetchAll extends OpenAPIRoute {
     description:
       'Serves the merged portfolio JSON (profile, experience, skills, projects) out of the Cloudflare KV ' +
       'cache, so visitors never wait on a possibly-sleeping Render instance. On a cold cache it fetches live ' +
-      "from the backend's own /all endpoint once, populates KV, and serves that instead.",
+      "from the backend's own /all endpoint once, populates KV, and serves that instead. Requires the " +
+      'shared bearer token like every other route here (this used to be open — it no longer is).',
     responses: {
       '200': {
         description: 'Portfolio data — check the X-Cache header to see if it was a cache HIT or MISS.',
