@@ -75,14 +75,14 @@ export const securitySchema = {
       bearerAuth: {
         type: 'http',
         scheme: 'bearer',
-        description: 'The worker\'s shared API_TOKEN. Every route requires this, including GET requests.',
+        description: 'User Token - The worker\'s shared API_TOKEN. Every route requires this, including GET requests.',
       },
       refreshSecret: {
         type: 'apiKey',
         in: 'header',
         name: 'x-refresh-secret',
         description:
-          'Only used by POST /api/refresh, which is called by the backend and by Cloudflare Cron rather ' +
+          'Refresh Token - Only used by POST /api/refresh, which is called by the backend and by Cloudflare Cron rather ' +
           'than by end users, so it keeps its own separate shared secret instead of the bearer token above.',
       },
     },
