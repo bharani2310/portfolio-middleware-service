@@ -46,10 +46,10 @@ export function isAuthorized(c) {
 }
 
 /** Paths that stay reachable without a token — the docs surface, plus
- * /api/refresh, which already has its own dedicated x-refresh-secret
- * protection (used by the backend's automated post-write pings and by
- * the Cron Trigger) and shouldn't require a second, different token on
- * top of that.
+ * /api/refresh and /api/resume/refresh, which already have their own
+ * dedicated x-refresh-secret protection (used by the backend's automated
+ * post-write pings and, for /api/refresh only, by the Cron Trigger too)
+ * and shouldn't require a second, different token on top of that.
  *
  * Note: chanfana serves the raw OpenAPI spec JSON at /openapi.json
  * (root-level), NOT /api/openapi.json — Swagger UI's own JS fetches that
@@ -57,7 +57,7 @@ export function isAuthorized(c) {
  * docs page loads but shows nothing (exactly the 401 you'd see in the
  * browser console otherwise).
  */
-export const PUBLIC_PATHS = ['/api/docs', '/openapi.json', '/api/refresh'];
+export const PUBLIC_PATHS = ['/api/docs', '/openapi.json', '/api/refresh', '/api/resume/refresh'];
 
 export function isPublicPath(path) {
   return PUBLIC_PATHS.some((p) => path === p || path.startsWith(`${p}/`));

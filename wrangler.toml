@@ -2,15 +2,31 @@ name = "portfolio-middleware"
 main = "src/index.js"
 compatibility_date = "2026-01-01"
 
-# Bind your KV namespace here — must stay above the FIRST [section]
+# Bind your KV namespaces here — must stay above the FIRST [section]
 # header in this file (currently [triggers]), or it gets silently
 # absorbed into whichever section precedes it.
+#
+# PORTFOLIO_KV: the main portfolio-data cache (GET /api/all) + the
+#               pending-contacts buffer.
+# RESUME_KV:    a SEPARATE cache dedicated to the resume PDF, on purpose —
+#               kept apart so a large binary blob never shares a
+#               namespace (or an eviction/quota budget) with the small,
+#               frequently-read JSON payloads in PORTFOLIO_KV. Create it
+#               with: npx wrangler kv namespace create RESUME_KV
 kv_namespaces = [
-  { binding = "PORTFOLIO_KV", id = "6e2338d9ddc040b4b192167722b14db4" }
+  { binding = "PORTFOLIO_KV", id = "6e2338d9ddc040b4b192167722b14db4" },
+  { binding = "RESUME_KV", id = "ccf1f0b1dc0d46edb1200513390f2172" }
 ]
 
 [triggers]
-crons = ["*/5 * * * *", "0 */6 * * *"]
+# */5 * * * *  -> refresh the /api/all KV cache
+# 0 0 * * *    -> flush buffered contact messages to the backend, once daily
+#                 (was every 6 hours)
+#
+# Deliberately absent: any schedule for the resume cache. It only ever
+# updates on demand — a visitor's own request, or the backend's explicit
+# POST /api/resume/refresh right after an admin uploads a new resume.
+crons = ["*/5 * * * *", "0 0 * * *"]
 
 [vars]
 BACKEND_URL = "https://portfolio-api-1yjf.onrender.com/api"

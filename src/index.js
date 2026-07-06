@@ -2,7 +2,7 @@
  * portfolio-middleware
  * ---------------------
  * A Cloudflare Worker (Hono + chanfana) that sits in front of the Render
- * backend for three purposes:
+ * backend for four purposes:
  *
  *   1. Serving the public "get all portfolio data" payload out of a
  *      Cloudflare KV cache, so GitHub Pages visitors never have to wait on
@@ -10,13 +10,20 @@
  *
  *   2. Absorbing public contact-form submissions so a visitor's request
  *      never has to wait on Render either. Messages are buffered in KV and
- *      batch-flushed to the backend every 6 hours by a Cron Trigger.
+ *      batch-flushed to the backend once every 24 hours by a Cron Trigger.
  *
  *   3. Acting as a single, fully-documented, token-protected front door for
  *      the rest of the portfolio's API (profile, skills, experience,
  *      projects, contact inbox) — every one of those routes is proxied
  *      straight through to the Render backend, unmodified, so the backend
  *      itself doesn't change at all.
+ *
+ *   4. Serving the resume PDF out of its OWN separate KV cache (RESUME_KV,
+ *      distinct from the portfolio-data KV above). Unlike #1, this cache
+ *      has no Cron Trigger at all — it's populated purely on demand: the
+ *      first visitor request after a cold cache, or an explicit refresh
+ *      from the backend right after an admin uploads a new resume. See
+ *      src/lib/resume.js and src/endpoints/Resume.js.
  *
  * Authentication: every route (including GET requests) requires
  * `Authorization: Bearer <API_TOKEN>` — see src/lib/auth.js. There is no
@@ -33,8 +40,8 @@
  *
  * Interactive API docs (Swagger UI, auto-generated from the schema on each
  * endpoint class below, grouped by tag: Profile / Skill / Experience /
- * Projects / Contact) are served token-free at GET /api/docs, so anyone can
- * read them and use the "Authorize" button to try requests with a token.
+ * Projects / Contact / Resume) are served token-free at GET /api/docs, so
+ * anyone can read them and use the "Authorize" button to try requests.
  */
 
 import { fromHono } from 'chanfana';
@@ -67,6 +74,7 @@ import {
   DeleteConversation,
   MarkConversationRead,
 } from './endpoints/ContactAdmin.js';
+import { GetResume, RefreshResume } from './endpoints/Resume.js';
 import { refreshCache, flushPendingContacts } from './lib/kv.js';
 import { isAuthorized, isPublicPath, securitySchema, ensureSecuritySchemeMiddleware } from './lib/auth.js';
 import { rateLimitMiddleware } from './lib/rateLimit.js';
@@ -164,6 +172,11 @@ openapi.delete('/api/contact/conversation/:email', DeleteConversation);
 openapi.patch('/api/contact/conversation/:email/read', MarkConversationRead);
 openapi.delete('/api/contact/:id', DeleteMessage);
 
+// --- Resume — served from its own dedicated KV cache, populated on
+// demand only (no Cron Trigger); see src/lib/resume.js ---
+openapi.get('/api/resume', GetResume);
+openapi.post('/api/resume/refresh', RefreshResume);
+
 app.notFound((c) =>
   c.json(
     {
@@ -180,10 +193,13 @@ export default {
   /**
    * Cron Trigger — two schedules share this one handler (see wrangler.toml):
    *   every 5 minutes -> keeps the /api/all KV cache warm
-   *   every 6 hours    -> flushes buffered contact messages to the backend
+   *   once every 24h   -> flushes buffered contact messages to the backend
+   *
+   * Deliberately NOT listed here: the resume cache. Per design, it has no
+   * Cron Trigger at all — see src/lib/resume.js.
    */
   async scheduled(event, env, ctx) {
-    if (event.cron === '0 */6 * * *') {
+    if (event.cron === '0 0 * * *') {
       ctx.waitUntil(
         flushPendingContacts(env).catch((err) => {
           console.error('Scheduled contact flush failed:', err.message);

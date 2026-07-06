@@ -10,7 +10,7 @@ const profileSchema = z.object({
   professionalSummary: z.string().optional(),
   currentCompany: z.string().optional(),
   location: z.string().optional(),
-  resumeLink: z.string().optional(),
+  resumeFile: z.string().nullable().optional().describe('URL for the uploaded resume, or null if none uploaded. See the Resume tag for the actual serving/caching route.'),
   socialLinks: z.record(z.string()).optional(),
 });
 
@@ -55,7 +55,9 @@ export class UpdateProfile extends OpenAPIRoute {
     description:
       'Proxies straight through to the backend\'s PUT /profile. Requires the backend admin JWT — pass it as ' +
       'the x-admin-token header (in addition to this worker\'s own bearer token). multipart/form-data body ' +
-      '(for an optional new profile image) is forwarded unparsed.',
+      '(for an optional new profile photo and/or an optional new resume PDF) is forwarded unparsed. ' +
+      'Uploading a resume here also triggers POST /api/resume/refresh server-side, so the separate resume ' +
+      'cache picks up the new file immediately — see the Resume tag.',
     parameters: [
       {
         name: 'x-admin-token',
@@ -76,8 +78,8 @@ export class UpdateProfile extends OpenAPIRoute {
               professionalSummary: z.string().optional(),
               currentCompany: z.string().optional(),
               location: z.string().optional(),
-              resumeLink: z.string().optional(),
-              image: z.string().optional().describe('Optional new profile image file.'),
+              image: z.string().optional().describe('Optional new profile photo file.'),
+              resume: z.string().optional().describe('Optional new resume PDF file, replacing any existing one.'),
             }),
           },
         },

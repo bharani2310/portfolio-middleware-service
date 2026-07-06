@@ -8,6 +8,7 @@
     "deploy": "wrangler deploy",
     "tail": "wrangler tail",
     "kv:create": "wrangler kv namespace create PORTFOLIO_KV",
+    "kv:create:resume": "wrangler kv namespace create RESUME_KV",
     "secret:refresh": "wrangler secret put REFRESH_SECRET"
   },
   "dependencies": {
