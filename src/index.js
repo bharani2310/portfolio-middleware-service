@@ -56,6 +56,7 @@ import { GetProfile, GetProfileImage, UpdateProfile } from './endpoints/Profile.
 import { ListSkills, CreateSkill, UpdateSkill, DeleteSkill } from './endpoints/Skills.js';
 import {
   ListExperience,
+  GetExperienceImage,
   CreateExperience,
   UpdateExperience,
   DeleteExperience,
@@ -153,6 +154,7 @@ openapi.delete('/api/skills/:id', DeleteSkill);
 
 // --- Experience ---
 openapi.get('/api/experience', ListExperience);
+openapi.get('/api/experience/:id/image', GetExperienceImage);
 openapi.post('/api/experience', CreateExperience);
 openapi.put('/api/experience/:id', UpdateExperience);
 openapi.delete('/api/experience/:id', DeleteExperience);

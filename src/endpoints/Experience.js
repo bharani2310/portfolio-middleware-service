@@ -11,6 +11,7 @@ const roleSchema = z.object({
 const experienceSchema = z.object({
   _id: z.string(),
   companyName: z.string(),
+  image: z.string().nullable().optional(),
   roles: z.array(roleSchema),
   technologies: z.array(z.string()).optional(),
   order: z.number().optional(),
@@ -38,21 +39,41 @@ export class ListExperience extends OpenAPIRoute {
   }
 }
 
+export class GetExperienceImage extends OpenAPIRoute {
+  schema = {
+    tags: ['Experience'],
+    summary: 'Get a company logo image',
+    description: 'Proxies straight through to the backend\'s GET /experience/{id}/image.',
+    parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+    responses: {
+      '200': { description: 'Image binary.' },
+      '404': { description: 'No image set.', content: { 'application/json': { schema: errorSchema } } },
+    },
+  };
+  async handle(c) {
+    const { id } = c.req.param();
+    return proxyToBackend(c, `/experience/${id}/image`);
+  }
+}
+
 export class CreateExperience extends OpenAPIRoute {
   schema = {
     tags: ['Experience'],
     summary: 'Create an experience entry',
-    description: 'Proxies straight through to the backend\'s POST /experience.',
+    description:
+      'Proxies straight through to the backend\'s POST /experience. multipart/form-data body (for an ' +
+      'optional company logo image) is forwarded unparsed.',
     parameters: [adminHeader],
     request: {
       body: {
         content: {
-          'application/json': {
+          'multipart/form-data': {
             schema: z.object({
               companyName: z.string(),
-              roles: z.array(roleSchema),
-              technologies: z.array(z.string()).optional(),
+              roles: z.string().describe('JSON-stringified array of role objects.'),
+              technologies: z.string().optional().describe('Comma-separated list, or JSON-stringified array.'),
               order: z.number().optional(),
+              image: z.string().optional().describe('Optional company logo image file.'),
             }),
           },
         },
@@ -72,7 +93,9 @@ export class UpdateExperience extends OpenAPIRoute {
   schema = {
     tags: ['Experience'],
     summary: 'Update an experience entry',
-    description: 'Proxies straight through to the backend\'s PUT /experience/{id}.',
+    description:
+      'Proxies straight through to the backend\'s PUT /experience/{id}. multipart/form-data body (for an ' +
+      'optional replacement company logo image) is forwarded unparsed.',
     parameters: [
       adminHeader,
       { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
@@ -80,12 +103,13 @@ export class UpdateExperience extends OpenAPIRoute {
     request: {
       body: {
         content: {
-          'application/json': {
+          'multipart/form-data': {
             schema: z.object({
               companyName: z.string().optional(),
-              roles: z.array(roleSchema).optional(),
-              technologies: z.array(z.string()).optional(),
+              roles: z.string().optional().describe('JSON-stringified array of role objects.'),
+              technologies: z.string().optional(),
               order: z.number().optional(),
+              image: z.string().optional().describe('Optional replacement company logo image file.'),
             }),
           },
         },
