@@ -29,11 +29,23 @@ function timingSafeEqual(a, b) {
   return diff === 0;
 }
 
-/** Extracts the bearer token from `Authorization: Bearer <token>`. */
+/** Extracts the bearer token from `Authorization: Bearer <token>`, or
+ * falls back to a `?token=` query param. The query fallback exists
+ * specifically for plain `<a href>` navigation (e.g. downloading the
+ * resume) — a link click can't attach a custom header, and iOS Safari in
+ * particular doesn't support downloading blob: URLs via the `download`
+ * attribute at all, so a real authenticated GET request the browser
+ * navigates to directly is the only reliable cross-platform way to
+ * trigger a file download. The token isn't a real secret to begin with
+ * (see the file-level comment above), so exposing it in a URL is no
+ * different from it already being readable in the built JS bundle.
+ */
 export function extractBearerToken(c) {
   const header = c.req.header('Authorization') || '';
   const match = header.match(/^Bearer\s+(.+)$/i);
-  return match ? match[1].trim() : null;
+  if (match) return match[1].trim();
+  const queryToken = c.req.query('token');
+  return queryToken ? queryToken.trim() : null;
 }
 
 /** True if the request carries a token matching the worker's API_TOKEN secret. */
@@ -75,7 +87,11 @@ export const securitySchema = {
       bearerAuth: {
         type: 'http',
         scheme: 'bearer',
-        description: 'User Token - The worker\'s shared API_TOKEN. Every route requires this, including GET requests.',
+        description:
+          'User Token - The worker\'s shared API_TOKEN. Every route requires this, including GET requests. ' +
+          'Normally sent as an Authorization: Bearer header; GET /api/resume additionally accepts it as a ' +
+          '?token= query param, since a direct file-download link (used for cross-platform-reliable resume ' +
+          'downloads) can\'t set custom headers.',
       },
       refreshSecret: {
         type: 'apiKey',
