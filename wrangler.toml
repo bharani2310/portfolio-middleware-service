@@ -26,7 +26,7 @@ kv_namespaces = [
 # Deliberately absent: any schedule for the resume cache. It only ever
 # updates on demand — a visitor's own request, or the backend's explicit
 # POST /api/resume/refresh right after an admin uploads a new resume.
-crons = ["*/5 * * * *", "0 0 * * *"]
+crons = ["0 */6 * * *", "0 0 * * *"]
 
 [vars]
 BACKEND_URL = "https://portfolio-api-1yjf.onrender.com/api"
