@@ -30,7 +30,10 @@ crons = ["*/5 * * * *", "0 0 * * *"]
 
 [vars]
 BACKEND_URL = "https://portfolio-api-1yjf.onrender.com/api"
-ALLOWED_ORIGIN = "https://bharani2310.github.io"
+ALLOWED_ORIGINS = [
+    "https://bharanidharan.in",
+    "https://bharani2310.github.io",
+]
 
 # REFRESH_SECRET is a SECRET, not a var — set it with:
 #   npx wrangler secret put REFRESH_SECRET
