@@ -11,6 +11,8 @@ const roleSchema = z.object({
 const experienceSchema = z.object({
   _id: z.string(),
   companyName: z.string(),
+  workplaceType: z.enum(['Hybrid', 'Onsite', 'Remote']).nullable().optional(),
+  location: z.string().optional(),
   image: z.string().nullable().optional(),
   roles: z.array(roleSchema),
   technologies: z.array(z.string()).optional(),
@@ -70,6 +72,8 @@ export class CreateExperience extends OpenAPIRoute {
           'multipart/form-data': {
             schema: z.object({
               companyName: z.string(),
+              workplaceType: z.enum(['Hybrid', 'Onsite', 'Remote']).optional(),
+              location: z.string().optional().describe('e.g. "Chennai, Tamil Nadu"'),
               roles: z.string().describe('JSON-stringified array of role objects.'),
               technologies: z.string().optional().describe('Comma-separated list, or JSON-stringified array.'),
               order: z.number().optional(),
@@ -106,6 +110,8 @@ export class UpdateExperience extends OpenAPIRoute {
           'multipart/form-data': {
             schema: z.object({
               companyName: z.string().optional(),
+              workplaceType: z.enum(['Hybrid', 'Onsite', 'Remote']).optional(),
+              location: z.string().optional().describe('e.g. "Chennai, Tamil Nadu"'),
               roles: z.string().optional().describe('JSON-stringified array of role objects.'),
               technologies: z.string().optional(),
               order: z.number().optional(),
