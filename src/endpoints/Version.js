@@ -48,11 +48,17 @@ export class Version extends OpenAPIRoute {
       const cachedRaw = await c.env.PORTFOLIO_KV.get(KEYS.DATA_KEY);
       if (cachedRaw) {
         const cached = JSON.parse(cachedRaw);
-        return c.json({ updatedAt: cached.updatedAt }, 200);
+        // Deliberately the payload's OWN `generatedAt` field (set by the
+        // backend controller), not the KV wrapper's `updatedAt`. The
+        // frontend reads `generatedAt` straight out of the /all response
+        // body — comparing against that same field here (both sourced
+        // from body JSON, never a header) keeps the two sides immune to
+        // CORS header-exposure issues.
+        return c.json({ updatedAt: cached.data?.generatedAt ?? cached.updatedAt }, 200);
       }
 
       const fresh = await refreshCache(c.env);
-      return c.json({ updatedAt: fresh.updatedAt }, 200);
+      return c.json({ updatedAt: fresh.data?.generatedAt ?? fresh.updatedAt }, 200);
     } catch (err) {
       return c.json({ message: 'Failed to load cache version.', error: err.message }, 502);
     }
