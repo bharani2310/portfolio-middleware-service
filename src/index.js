@@ -49,6 +49,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 
 import { FetchAll } from './endpoints/FetchAll.js';
+import { Version } from './endpoints/Version.js';
 import { SubmitContact } from './endpoints/SubmitContact.js';
 import { RefreshCache } from './endpoints/RefreshCache.js';
 import { FlushContacts } from './endpoints/FlushContacts.js';
@@ -137,6 +138,7 @@ const openapi = fromHono(app, {
 
 // --- Portfolio data cache + contact intake ---
 openapi.get('/api/all', FetchAll);
+openapi.get('/api/version', Version);
 openapi.post('/api/contact', SubmitContact);
 openapi.post('/api/refresh', RefreshCache);
 openapi.post('/api/message-refresh', FlushContacts);
